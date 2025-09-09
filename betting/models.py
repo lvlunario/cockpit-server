@@ -6,7 +6,7 @@ class Cashier(models.Model):
     name = models.CharField(max_length=200)
     
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.station_id})"
     
 class Event(models.Model):
     name = models.CharField(max_length=255)
@@ -25,4 +25,4 @@ class Bet(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     
 def __str__(self):
-    return f"Bet {self.id} on {self.event.name}"
+    return f"Bet of PHP{self.amount} on {self.event.name} by {self.cashier.name}"
