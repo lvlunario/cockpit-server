@@ -30,3 +30,13 @@ def cashier_interface_view(request):
         'event_id': 1 # For now, we hardcode the main event ID
     }
     return render(request, "cashier.html", context)
+
+
+def totalizer_view(request):
+    """
+    This view simply serves the totalizer.html template for public display
+    """
+    context = {
+        'event_id': 1 # Hardcoding the main event for now
+    }
+    return render(request, "totalizer.html", context)

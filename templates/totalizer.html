@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Totalizer - Cockpit Arena</title>
+    <style>
+        :root {
+            --bg-color: #10101d;
+            --card-color: #16213e;
+            --text-color: #e0fbfc;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+            --odds-color: #f7ff00;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .totalizer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 95%;
+            max-width: 1200px;
+        }
+        .side-card {
+            background-color: var(--card-color);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border-top: 10px solid;
+        }
+        .meron { border-color: var(--accent-green); }
+        .wala { border-color: var(--accent-red); }
+        .side-card h1 {
+            font-size: 5em;
+            margin: 0 0 10px 0;
+        }
+        .meron h1 { color: var(--accent-green); }
+        .wala h1 { color: var(--accent-red); }
+        .label {
+            font-size: 1.5em;
+            color: #a9a9a9;
+            text-transform: uppercase;
+        }
+        .value {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .odds {
+            color: var(--odds-color);
+            font-size: 4.5em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="totalizer-grid">
+    <div class="side-card meron">
+        <h1>MERON</h1>
+        <p class="label">Total Wager</p>
+        <p class="value" id="meron-wager">₱0</p>
+        <p class="label">Odds</p>
+        <p class="value odds" id="meron-odds">0.00</p>
+        <p class="label">Total Payout</p>
+        <p class="value" id="meron-payout">₱0</p>
+    </div>
+    <div class="side-card wala">
+        <h1>WALA</h1>
+        <p class="label">Total Wager</p>
+        <p class="value" id="wala-wager">₱0</p>
+        <p class="label">Odds</p>
+        <p class="value odds" id="wala-odds">0.00</p>
+        <p class="label">Total Payout</p>
+        <p class="value" id="wala-payout">₱0</p>
+    </div>
+</div>
+
+<script>
+    const eventId = JSON.parse('{{ event_id|escapejs }}');
+    const apiUrl = `/api/events/${eventId}/stats/`;
+
+    // Function to format numbers with commas and peso sign
+    function formatCurrency(value) {
+        const number = parseFloat(value);
+        return '₱' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    // Function to update the display with new data from the API
+    function updateDisplay(stats) {
+        document.getElementById('meron-wager').textContent = formatCurrency(stats.meron_total_wager);
+        document.getElementById('wala-wager').textContent = formatCurrency(stats.wala_total_wager);
+        
+        document.getElementById('meron-odds').textContent = stats.meron_odds;
+        document.getElementById('wala-odds').textContent = stats.wala_odds;
+
+        document.getElementById('meron-payout').textContent = formatCurrency(stats.meron_total_payout);
+        document.getElementById('wala-payout').textContent = formatCurrency(stats.wala_total_payout);
+    }
+
+    // Function to fetch the latest stats from the server
+    async function fetchStats() {
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const stats = await response.json();
+            updateDisplay(stats);
+        } catch (error) {
+            console.error('Failed to fetch stats:', error);
+        }
+    }
+
+    // Fetch the stats immediately on page load, and then
+    // set an interval to fetch them again every 3 seconds.
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchStats(); // Initial fetch
+        setInterval(fetchStats, 3000); // Refresh every 3 seconds
+    });
+</script>
+</body>
+</html>
