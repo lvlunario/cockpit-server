@@ -1,3 +1,4 @@
+# betting/views.py
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -6,55 +7,27 @@ from .models import Bet, Event
 from .serializers import BetSerializer
 from .logic import calculate_event_stats, calculate_financial_summary, process_event_payouts
 
+# --- API Views (These are correct) ---
+
 class PlaceBetView(generics.CreateAPIView):
     queryset = Bet.objects.all()
     serializer_class = BetSerializer
 
 class EventStatsView(APIView):
-    """
-    Provides live statistics for a specific event.
-    """
-    
     def get(self, request, event_id):
         try:
             event = Event.objects.get(pk=event_id)
             stats = calculate_event_stats(event)
             return Response(stats)
         except Event.DoesNotExist:
-            return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
 class FinancialSummaryView(APIView):
-    """
-    Provides a high-level financial summary of all operations.
-    """
     def get(self, request):
         summary_data = calculate_financial_summary()
         return Response(summary_data)
-        
-def cashier_interface_view(request):
-    # This view simply renders and returns the cashier.html template
-    # We can pass initial data to the template here if needed in the future.
-    context = {
-        'event_id': 2 # For now, we hardcode the main event ID
-    }
-    return render(request, "cashier.html", context)
-
-
-def totalizer_view(request):
-    """
-    This view simply serves the totalizer.html template for public display
-    """
-    context = {
-        'event_id': 2 # Hardcoding the main event for now
-    }
-    return render(request, "totalizer.html", context)
-
 
 class EndEventView(APIView):
-    """
-    API endpoint for an operator to end an event and declare a winner.
-    This triggers the payout calculations for all bets on that event.
-    """
     def post(self, request, event_id):
         winner = request.data.get('winner')
         if not winner or winner.upper() not in ['MERON', 'WALA']:
@@ -62,7 +35,6 @@ class EndEventView(APIView):
                 {"error": "A valid 'winner' (MERON or WALA) must be provided."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         try:
             event = Event.objects.get(pk=event_id)
             result = process_event_payouts(event, winner.upper())
@@ -71,40 +43,19 @@ class EndEventView(APIView):
             return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
-def operator_dashboard_view(request):
-    """
-    Serves the main dashboard for the cockpit operator.
-    """
-    context = {
-        'event_id': 2 # Hardcoding the main event for now
-    }
-    return render(request, "operator.html", context)
 
 class SetActiveEventView(APIView):
-    """
-    Sets a specific event as active for betting.
-    This will deactivate any other currently active event.
-    """
     def post(self, request, event_id):
         try:
-            # Deactivate all other events first
             Event.objects.filter(is_active=True).update(is_active=None)
-
-            # Activate the selected event
             event = Event.objects.get(pk=event_id)
             event.is_active = True
             event.save()
-
             return Response({"status": "success", "message": f"{event.name} is now the active event."})
         except Event.DoesNotExist:
             return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+
 class ActiveEventView(APIView):
-    """
-    Returns the data for the currently active event.
-    """
     def get(self, request):
         try:
             event = Event.objects.get(is_active=True)
@@ -112,3 +63,59 @@ class ActiveEventView(APIView):
             return Response(data)
         except Event.DoesNotExist:
             return Response({"error": "No active event found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+# --- Template-Rendering Views (These are now corrected) ---
+
+def cashier_interface_view(request):
+    # The context dictionary is no longer needed.
+    return render(request, "cashier.html")
+
+def totalizer_view(request):
+    # The context dictionary is no longer needed.
+    return render(request, "totalizer.html")
+
+def operator_dashboard_view(request):
+    # The context dictionary is no longer needed.
+    return render(request, "operator.html")
+
+class BetStatusView(APIView):
+    """
+    Looks up a bet by its UUID to check its status and payout amount.
+    """
+    def get(self, request, bet_id):
+        try:
+            bet = Bet.objects.get(pk=bet_id)
+            data = {
+                'id': bet.id,
+                'event': bet.event.name,
+                'bet_choice': bet.bet_choice,
+                'amount': bet.amount,
+                'status': bet.payout_status,
+                'payout_amount': bet.payout_amount
+            }
+            return Response(data)
+        except Bet.DoesNotExist:
+            return Response({"error": "Bet ticket not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class PayoutBetView(APIView):
+    """
+    Marks a winning bet as PAID.
+    """
+    def post(self, request, bet_id):
+        try:
+            bet = Bet.objects.get(pk=bet_id)
+            if bet.payout_status == 'WON':
+                bet.payout_status = 'PAID'
+                bet.save()
+                return Response({
+                    "status": "success",
+                    "message": "Bet marked as PAID.",
+                    "payout_amount": bet.payout_amount
+                })
+            elif bet.payout_status == 'PAID':
+                return Response({"error": "This bet has already been paid."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": "This bet is not a winner."}, status=status.HTTP_400_BAD_REQUEST)
+        except Bet.DoesNotExist:
+            return Response({"error": "Bet ticket not found"}, status=status.HTTP_404_NOT_FOUND)

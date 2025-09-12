@@ -30,7 +30,9 @@
     </style>
 </head>
 <body>
+
     <h1>Operator Dashboard</h1>
+
     <div class="dashboard-grid">
         <div class="card">
             <h2>Financial Summary (All Fights)</h2>
@@ -49,6 +51,7 @@
                 </div>
             </div>
         </div>
+
         <div class="card">
             <h2>Live Event Stats (<span id="event-name">No Active Event</span>)</h2>
             <div class="live-stats-grid">
@@ -62,6 +65,7 @@
                 </div>
             </div>
         </div>
+
         <div class="card">
             <h2>Live Event Control</h2>
             <div class="event-controls">
@@ -71,29 +75,66 @@
             <div class="status-message" id="status-message"></div>
         </div>
     </div>
+
 <script>
-    const summaryApiUrl = '/api/reports/financial-summary/';
+    // --- DOM Elements ---
+    const summaryWagersEl = document.getElementById('summary-wagers');
+    const summaryPayoutsEl = document.getElementById('summary-payouts');
+    const summaryRakeEl = document.getElementById('summary-rake');
     const eventNameSpan = document.getElementById('event-name');
+    const liveMeronWagerEl = document.getElementById('live-meron-wager');
+    const liveWalaWagerEl = document.getElementById('live-wala-wager');
     const meronWinnerBtn = document.getElementById('meron-winner-btn');
     const walaWinnerBtn = document.getElementById('wala-winner-btn');
+    const statusMessageEl = document.getElementById('status-message');
 
+    // --- API URLs and State ---
+    const summaryApiUrl = '/api/reports/financial-summary/';
     let eventId = null;
     let eventStatsApiUrl = '';
     let eventEndApiUrl = '';
     let statsInterval = null;
 
+    // --- Helper Functions ---
     function formatCurrency(value) {
         const number = parseFloat(value);
         return '₱' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    async function fetchSummary() { /* ... function is unchanged ... */ }
-    async function fetchLiveStats() { /* ... function is unchanged ... */ }
-    function showStatusMessage(text, isError = false) { /* ... function is unchanged ... */ }
-    
+    function showStatusMessage(text, isError = false) {
+        statusMessageEl.textContent = text;
+        statusMessageEl.style.color = isError ? 'var(--accent-red)' : 'var(--accent-green)';
+    }
+
+    // --- API Call Functions ---
+    async function fetchSummary() {
+        try {
+            const response = await fetch(summaryApiUrl);
+            const data = await response.json();
+            summaryWagersEl.textContent = formatCurrency(data.total_wagers);
+            summaryPayoutsEl.textContent = formatCurrency(data.total_payouts);
+            summaryRakeEl.textContent = formatCurrency(data.total_rake);
+        } catch (error) { console.error('Error fetching summary:', error); }
+    }
+
+    async function fetchLiveStats() {
+        if (!eventId) return;
+        try {
+            const response = await fetch(eventStatsApiUrl);
+            const data = await response.json();
+            // CORRECTION: Ensure these lines correctly update the elements
+            liveMeronWagerEl.textContent = formatCurrency(data.meron_total_wager);
+            liveWalaWagerEl.textContent = formatCurrency(data.wala_total_wager);
+        } catch (error) { console.error('Error fetching live stats:', error); }
+    }
+
     async function declareWinner(winner) {
         if (!eventId) { showStatusMessage('No active event to close.', true); return; }
         if (!confirm(`Are you sure you want to declare ${winner} as the winner? This will finalize all bets.`)) { return; }
+
+        meronWinnerBtn.disabled = true;
+        walaWinnerBtn.disabled = true;
+
         try {
             const response = await fetch(eventEndApiUrl, {
                 method: 'POST',
@@ -102,18 +143,25 @@
             });
             const result = await response.json();
             if (!response.ok) { throw new Error(result.error || 'An unknown error occurred.'); }
+
             showStatusMessage(result.message);
-            meronWinnerBtn.disabled = true;
-            walaWinnerBtn.disabled = true;
+
             if (statsInterval) clearInterval(statsInterval);
+            eventNameSpan.textContent = 'No Active Event';
+            liveMeronWagerEl.textContent = '₱0.00';
+            liveWalaWagerEl.textContent = '₱0.00';
             fetchSummary();
+
         } catch (error) {
             console.error('Error declaring winner:', error);
             showStatusMessage(error.message, true);
+            meronWinnerBtn.disabled = false;
+            walaWinnerBtn.disabled = false;
         }
     }
-    
+
     async function initialize() {
+        if (statsInterval) clearInterval(statsInterval);
         try {
             const response = await fetch('/api/events/active/');
             const data = await response.json();
@@ -128,6 +176,8 @@
                 statsInterval = setInterval(fetchLiveStats, 3000);
             } else {
                 eventNameSpan.textContent = 'No Active Event';
+                meronWinnerBtn.disabled = true;
+                walaWinnerBtn.disabled = true;
             }
         } catch (error) {
             eventNameSpan.textContent = 'Connection Error';
@@ -135,6 +185,7 @@
         }
     }
 
+    // --- Initial Page Load ---
     document.addEventListener('DOMContentLoaded', () => {
         fetchSummary();
         initialize();
