@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashier POS - Cockpit Arena</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-color: #16213e;
+            --text-color: #e0fbfc;
+            --primary-color: #0f3460;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+            --border-color: #a9a9a9;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            touch-action: manipulation;
+        }
+        .pos-container {
+            width: 360px;
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+        .display {
+            background-color: var(--bg-color);
+            border-radius: 5px;
+            padding: 15px;
+            text-align: right;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            height: 50px;
+        }
+        .bet-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .choice-btn {
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .meron { background-color: var(--accent-green); color: white; }
+        .wala { background-color: var(--accent-red); color: white; }
+        .choice-btn.selected { border-color: #f7ff00; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .keypad button {
+            padding: 20px;
+            font-size: 1.5em;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .submit-btn {
+            grid-column: span 3;
+            background-color: var(--accent-green);
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .message { margin-top: 15px; text-align: center; font-size: 1em; height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="pos-container">
+    <div id="display" class="display">0</div>
+    <div class="bet-choices">
+        <button id="meron-btn" class="choice-btn meron" onclick="selectChoice('Meron')">MERON</button>
+        <button id="wala-btn" class="choice-btn wala" onclick="selectChoice('Wala')">WALA</button>
+    </div>
+    <div class="keypad">
+        <button onclick="appendNumber('1')">1</button>
+        <button onclick="appendNumber('2')">2</button>
+        <button onclick="appendNumber('3')">3</button>
+        <button onclick="appendNumber('4')">4</button>
+        <button onclick="appendNumber('5')">5</button>
+        <button onclick="appendNumber('6')">6</button>
+        <button onclick="appendNumber('7')">7</button>
+        <button onclick="appendNumber('8')">8</button>
+        <button onclick="appendNumber('9')">9</button>
+        <button onclick="clearDisplay()">C</button>
+        <button onclick="appendNumber('0')">0</button>
+        <button onclick="backspace()">⌫</button>
+        <button class="submit-btn" onclick="placeBet()">PLACE BET</button>
+    </div>
+    <div id="message" class="message"></div>
+</div>
+
+<script>
+    const display = document.getElementById('display');
+    const messageDiv = document.getElementById('message');
+    const meronBtn = document.getElementById('meron-btn');
+    const walaBtn = document.getElementById('wala-btn');
+    const eventId = JSON.parse('{{ event_id|escapejs }}');
+
+    let currentAmount = '0';
+    let selectedChoice = '';
+
+    function updateDisplay() {
+        display.textContent = parseInt(currentAmount).toLocaleString('en-US');
+    }
+
+    function appendNumber(number) {
+        if (currentAmount === '0') {
+            currentAmount = '';
+        }
+        currentAmount += number;
+        updateDisplay();
+    }
+
+    function clearDisplay() {
+        currentAmount = '0';
+        updateDisplay();
+    }
+    
+    function backspace() {
+        currentAmount = currentAmount.slice(0, -1);
+        if (currentAmount === '') {
+            currentAmount = '0';
+        }
+        updateDisplay();
+    }
+
+    function selectChoice(choice) {
+        selectedChoice = choice;
+        if (choice === 'Meron') {
+            meronBtn.classList.add('selected');
+            walaBtn.classList.remove('selected');
+        } else {
+            walaBtn.classList.add('selected');
+            meronBtn.classList.remove('selected');
+        }
+    }
+
+    function showMessage(text, isError = false) {
+        messageDiv.textContent = text;
+        messageDiv.style.color = isError ? 'var(--accent-red)' : 'var(--accent-green)';
+        setTimeout(() => messageDiv.textContent = '', 3000);
+    }
+
+    async function placeBet() {
+        if (!selectedChoice) {
+            showMessage('Please select Meron or Wala.', true);
+            return;
+        }
+        if (parseInt(currentAmount) <= 0) {
+            showMessage('Please enter an amount.', true);
+            return;
+        }
+
+        const betData = {
+            event: eventId,
+            cashier: 1, // Hardcoded for now, would be dynamic in a real app
+            amount: currentAmount,
+            bet_choice: selectedChoice
+        };
+        
+        try {
+            const response = await fetch('/api/place-bet/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}' // Django CSRF protection
+                },
+                body: JSON.stringify(betData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+
+            const result = await response.json();
+            showMessage('Bet placed successfully!', false);
+            // Here you would trigger the print receipt function
+            clearDisplay();
+
+        } catch (error) {
+            console.error('Error placing bet:', error);
+            showMessage('Error: Could not place bet.', true);
+        }
+    }
+    
+    // Select Meron by default to start
+    selectChoice('Meron');
+
+</script>
+</body>
+</html>

@@ -1,11 +1,9 @@
 from django.shortcuts import render
-from rest_framework import generics
-from .models import Bet
-from .serializers import BetSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from .models import Event
+from rest_framework import status, generics
+from .models import Bet, Event
+from .serializers import BetSerializer
 from .logic import calculate_event_stats
 
 class PlaceBetView(generics.CreateAPIView):
@@ -24,3 +22,11 @@ class EventStatsView(APIView):
             return Response(stats)
         except Event.DoesNotExist:
             return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+def cashier_interface_view(request):
+    # This view simply renders and returns the cashier.html template
+    # We can pass initial data to the template here if needed in the future.
+    context = {
+        'event_id': 1 # For now, we hardcode the main event ID
+    }
+    return render(request, "cashier.html", context)
