@@ -1,3 +1,4 @@
+# betting/urls.py
 from django.urls import path
 from .views import (
     PlaceBetView, 
@@ -5,7 +6,9 @@ from .views import (
     FinancialSummaryView, 
     EndEventView,
     SetActiveEventView,
-    ActiveEventView
+    ActiveEventView,
+    BetStatusView,
+    PayoutBetView
 )
 
 urlpatterns = [
