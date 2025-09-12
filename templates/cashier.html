@@ -13,14 +13,12 @@
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .pos-container { width: 380px; background-color: var(--card-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
         
-        /* Mode Toggle Switch */
         .toggle-switch { display: flex; background-color: var(--primary-color); border-radius: 5px; margin-bottom: 15px; padding: 5px; }
         .toggle-btn { flex: 1; padding: 10px; text-align: center; border: none; background-color: transparent; color: var(--text-color); cursor: pointer; font-size: 1em; border-radius: 5px; }
         .toggle-btn.active { background-color: var(--accent-green); font-weight: bold; }
         
         .hidden { display: none; }
         
-        /* Betting Mode Styles */
         .event-name { text-align: center; font-size: 1.2em; margin-bottom: 15px; color: #f7ff00; height: 20px; }
         .display { background-color: var(--bg-color); border-radius: 5px; padding: 15px; text-align: right; font-size: 2.5em; margin-bottom: 20px; height: 50px; }
         .bet-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -33,7 +31,6 @@
         .submit-btn { grid-column: span 3; background-color: var(--accent-green); font-weight: bold; margin-top: 10px; }
         .submit-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
         
-        /* Payout Mode Styles */
         .payout-scanner { text-align: center; }
         .payout-scanner input { width: 90%; padding: 15px; font-size: 1.2em; text-align: center; margin-bottom: 15px; }
         .payout-details { background-color: var(--bg-color); padding: 15px; border-radius: 5px; text-align: left; }
@@ -95,18 +92,28 @@
     const bettingModeBtn = document.getElementById('betting-mode-btn');
     const payoutModeBtn = document.getElementById('payout-mode-btn');
     
+    // --- Payout Mode Elements ---
+    const ticketIdInput = document.getElementById('ticket-id');
+    const payoutStatusSpan = document.getElementById('payout-status');
+    const payoutBetInfoSpan = document.getElementById('payout-bet-info');
+    const payoutAmountSpan = document.getElementById('payout-amount');
+    const payoutBtn = document.getElementById('payout-btn');
+    let currentTicketId = null;
+
     function switchMode(mode) {
         if (mode === 'betting') {
             bettingModeDiv.classList.remove('hidden');
             payoutModeDiv.classList.add('hidden');
             bettingModeBtn.classList.add('active');
             payoutModeBtn.classList.remove('active');
-        } else {
+        } else { // Switching to Payout Mode
             payoutModeDiv.classList.remove('hidden');
             bettingModeDiv.classList.add('hidden');
             payoutModeBtn.classList.add('active');
             bettingModeBtn.classList.remove('active');
-            document.getElementById('ticket-id').focus(); // Auto-focus the input for scanner
+            ticketIdInput.focus();
+            // Attach the event listener ONLY when switching to payout mode.
+            ticketIdInput.addEventListener('change', lookupTicket);
         }
         clearMessages();
     }
@@ -120,47 +127,51 @@
     let currentAmount = '0';
     let selectedChoice = '';
     
-    // Betting Mode Functions (appendNumber, clearDisplay, etc.) are the same as before...
-    function updateDisplay() { /* ... */ }
-    function appendNumber(num) { /* ... */ }
-    function clearDisplay() { /* ... */ }
-    function backspace() { /* ... */ }
-    function selectChoice(choice) { /* ... */ }
-    async function placeBet() { /* ... */ }
+    function updateDisplay() { display.textContent = parseInt(currentAmount).toLocaleString('en-US'); }
+    function appendNumber(number) { if (currentAmount === '0') { currentAmount = ''; } currentAmount += number; updateDisplay(); }
+    function clearDisplay() { currentAmount = '0'; updateDisplay(); }
+    function backspace() { currentAmount = currentAmount.slice(0, -1); if (currentAmount === '') { currentAmount = '0'; } updateDisplay(); }
+    function selectChoice(choice) { selectedChoice = choice; if (choice === 'Meron') { meronBtn.classList.add('selected'); walaBtn.classList.remove('selected'); } else { walaBtn.classList.add('selected'); meronBtn.classList.remove('selected'); } }
+    
+    async function placeBet() {
+        if (!eventId) { showMessage('Betting is closed. No active event.', true); return; }
+        if (!selectedChoice) { showMessage('Please select Meron or Wala.', true); return; }
+        if (parseInt(currentAmount) <= 0) { showMessage('Please enter an amount.', true); return; }
+        const betData = { event: eventId, cashier: 1, amount: currentAmount, bet_choice: selectedChoice };
+        try {
+            const response = await fetch('/api/place-bet/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(betData)
+            });
+            if (!response.ok) { throw new Error('Server returned an error.'); }
+            showMessage('Bet placed successfully!', false);
+            clearDisplay();
+        } catch (error) {
+            console.error('Error placing bet:', error);
+            showMessage('Error: Could not place bet.', true);
+        }
+    }
     
     // --- Payout Mode Logic ---
-    const ticketIdInput = document.getElementById('ticket-id');
-    const payoutStatusSpan = document.getElementById('payout-status');
-    const payoutBetInfoSpan = document.getElementById('payout-bet-info');
-    const payoutAmountSpan = document.getElementById('payout-amount');
-    const payoutBtn = document.getElementById('payout-btn');
-    let currentTicketId = null;
-
-    ticketIdInput.addEventListener('change', lookupTicket); // Trigger on Enter or scanner input
-
     async function lookupTicket() {
         currentTicketId = ticketIdInput.value.trim();
         if (!currentTicketId) return;
-        
         payoutBtn.disabled = true;
         payoutStatusSpan.textContent = '...checking...';
-
         try {
             const response = await fetch(`/api/bets/${currentTicketId}/status/`);
             const data = await response.json();
             if (!response.ok) { throw new Error(data.error); }
-
             payoutStatusSpan.textContent = data.status;
             payoutBetInfoSpan.textContent = `${formatCurrency(data.amount, false)} on ${data.bet_choice}`;
             payoutAmountSpan.textContent = formatCurrency(data.payout_amount || 0);
-
             if (data.status === 'WON') {
-                payoutBtn.disabled = false; // Enable payout button only for winning tickets
+                payoutBtn.disabled = false;
                 payoutStatusSpan.style.color = 'var(--accent-green)';
             } else {
                 payoutStatusSpan.style.color = 'var(--accent-red)';
             }
-
         } catch (error) {
             payoutStatusSpan.textContent = 'Error';
             payoutBetInfoSpan.textContent = error.message;
@@ -172,7 +183,6 @@
     async function payoutBet() {
         if (!currentTicketId) return;
         payoutBtn.disabled = true;
-
         try {
             const response = await fetch(`/api/bets/${currentTicketId}/payout/`, {
                 method: 'POST',
@@ -180,32 +190,46 @@
             });
             const data = await response.json();
             if (!response.ok) { throw new Error(data.error); }
-            
             showMessage(`Paid out ${formatCurrency(data.payout_amount)}`, false);
-            ticketIdInput.value = ''; // Clear for next scan
-            lookupTicket(); // Re-check status, will now show 'PAID'
-
+            ticketIdInput.value = '';
+            lookupTicket();
         } catch (error) {
             showMessage(error.message, true);
-            payoutBtn.disabled = false; // Re-enable if payout failed
+            payoutBtn.disabled = false;
             console.error('Error paying out bet:', error);
         }
     }
 
-    // --- Initialization ---
-    async function initialize() { /* ... same as before ... */ }
-    function showMessage(text, isError = false) { /* ... */ }
-    function clearMessages() { messageDiv.textContent = ''; }
-    document.addEventListener('DOMContentLoaded', initialize);
+    // --- Initialization and Helper Functions ---
+    async function initialize() {
+        try {
+            const response = await fetch('/api/events/active/');
+            const data = await response.json();
+            if (data.id) {
+                eventId = data.id;
+                eventNameDiv.textContent = data.name;
+                submitBtn.disabled = false;
+            } else {
+                eventNameDiv.textContent = 'NO ACTIVE EVENT';
+                showMessage('Betting is closed.', true);
+            }
+        } catch (error) {
+            eventNameDiv.textContent = 'Error connecting to server';
+            console.error("Could not fetch active event:", error);
+        }
+    }
     
-    // (Helper functions from before need to be filled in for brevity)
+    function showMessage(text, isError = false) { messageDiv.textContent = text; messageDiv.style.color = isError ? 'var(--accent-red)' : 'var(--accent-green)'; setTimeout(() => messageDiv.textContent = '', 3000); }
+    function clearMessages() { messageDiv.textContent = ''; }
     function formatCurrency(value, withSymbol = true) {
         const number = parseFloat(value);
         const formatted = number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return withSymbol ? '₱' + formatted : formatted;
     }
-    // (And the rest of the betting mode functions)
 
+    document.addEventListener('DOMContentLoaded', initialize);
+    selectChoice('Meron'); // Select Meron by default
 </script>
+
 </body>
 </html>
