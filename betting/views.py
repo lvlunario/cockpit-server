@@ -81,3 +81,34 @@ def operator_dashboard_view(request):
         'event_id': 2 # Hardcoding the main event for now
     }
     return render(request, "operator.html", context)
+
+class SetActiveEventView(APIView):
+    """
+    Sets a specific event as active for betting.
+    This will deactivate any other currently active event.
+    """
+    def post(self, request, event_id):
+        try:
+            # Deactivate all other events first
+            Event.objects.filter(is_active=True).update(is_active=None)
+
+            # Activate the selected event
+            event = Event.objects.get(pk=event_id)
+            event.is_active = True
+            event.save()
+
+            return Response({"status": "success", "message": f"{event.name} is now the active event."})
+        except Event.DoesNotExist:
+            return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class ActiveEventView(APIView):
+    """
+    Returns the data for the currently active event.
+    """
+    def get(self, request):
+        try:
+            event = Event.objects.get(is_active=True)
+            data = {'id': event.id, 'name': event.name}
+            return Response(data)
+        except Event.DoesNotExist:
+            return Response({"error": "No active event found"}, status=status.HTTP_404_NOT_FOUND)

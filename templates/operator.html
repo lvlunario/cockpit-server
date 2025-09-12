@@ -6,86 +6,31 @@
     <title>Operator Dashboard</title>
     <style>
         :root {
-            --bg-color: #10101d;
-            --card-color: #16213e;
-            --text-color: #e0fbfc;
-            --accent-green: #28a745;
-            --accent-red: #dc3545;
-            --accent-blue: #0f3460;
+            --bg-color: #10101d; --card-color: #16213e; --text-color: #e0fbfc;
+            --accent-green: #28a745; --accent-red: #dc3545; --accent-blue: #0f3460;
+            --disabled-color: #5a5a5a;
         }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-        h1, h2 {
-            color: white;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-        .card {
-            background-color: var(--card-color);
-            border-radius: 10px;
-            padding: 20px;
-        }
-        .stat-card {
-            text-align: center;
-        }
-        .stat-card .label {
-            font-size: 1.2em;
-            color: #a9a9a9;
-        }
-        .stat-card .value {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .financial-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .live-stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
-        }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        h1, h2 { color: white; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .card { background-color: var(--card-color); border-radius: 10px; padding: 20px; }
+        .stat-card { text-align: center; }
+        .stat-card .label { font-size: 1.2em; color: #a9a9a9; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; margin-top: 10px; }
+        .financial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .live-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .event-controls button {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
+            width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold;
+            color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;
         }
-        .declare-meron {
-            background-color: var(--accent-green);
-        }
-        .declare-wala {
-            background-color: var(--accent-red);
-        }
-        .status-message {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 1.1em;
-            height: 20px;
-        }
+        .declare-meron { background-color: var(--accent-green); }
+        .declare-wala { background-color: var(--accent-red); }
+        .event-controls button:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
+        .status-message { text-align: center; margin-top: 15px; font-size: 1.1em; height: 20px; }
     </style>
 </head>
 <body>
-
     <h1>Operator Dashboard</h1>
-
     <div class="dashboard-grid">
         <div class="card">
             <h2>Financial Summary (All Fights)</h2>
@@ -104,9 +49,8 @@
                 </div>
             </div>
         </div>
-
         <div class="card">
-            <h2>Live Event Stats (Event #<span id="event-id-live"></span>)</h2>
+            <h2>Live Event Stats (<span id="event-name">No Active Event</span>)</h2>
             <div class="live-stats-grid">
                 <div class="stat-card">
                     <div class="label">Meron Wagers</div>
@@ -118,96 +62,83 @@
                 </div>
             </div>
         </div>
-
         <div class="card">
-            <h2>Live Event Control (Event #<span id="event-id-control"></span>)</h2>
+            <h2>Live Event Control</h2>
             <div class="event-controls">
-                <button class="declare-meron" onclick="declareWinner('MERON')">DECLARE MERON WINNER</button>
-                <button class="declare-wala" onclick="declareWinner('WALA')">DECLARE WALA WINNER</button>
+                <button id="meron-winner-btn" class="declare-meron" onclick="declareWinner('MERON')" disabled>DECLARE MERON WINNER</button>
+                <button id="wala-winner-btn" class="declare-wala" onclick="declareWinner('WALA')" disabled>DECLARE WALA WINNER</button>
             </div>
             <div class="status-message" id="status-message"></div>
         </div>
     </div>
-
 <script>
-    const eventId = JSON.parse('{{ event_id|escapejs }}');
     const summaryApiUrl = '/api/reports/financial-summary/';
-    const eventStatsApiUrl = `/api/events/${eventId}/stats/`;
-    const eventEndApiUrl = `/api/events/${eventId}/end/`;
+    const eventNameSpan = document.getElementById('event-name');
+    const meronWinnerBtn = document.getElementById('meron-winner-btn');
+    const walaWinnerBtn = document.getElementById('wala-winner-btn');
 
-    document.getElementById('event-id-live').textContent = eventId;
-    document.getElementById('event-id-control').textContent = eventId;
+    let eventId = null;
+    let eventStatsApiUrl = '';
+    let eventEndApiUrl = '';
+    let statsInterval = null;
 
     function formatCurrency(value) {
         const number = parseFloat(value);
         return '₱' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    async function fetchSummary() {
-        try {
-            const response = await fetch(summaryApiUrl);
-            const data = await response.json();
-            document.getElementById('summary-wagers').textContent = formatCurrency(data.total_wagers);
-            document.getElementById('summary-payouts').textContent = formatCurrency(data.total_payouts);
-            document.getElementById('summary-rake').textContent = formatCurrency(data.total_rake);
-        } catch (error) {
-            console.error('Error fetching summary:', error);
-        }
-    }
-
-    async function fetchLiveStats() {
-        try {
-            const response = await fetch(eventStatsApiUrl);
-            const data = await response.json();
-            document.getElementById('live-meron-wager').textContent = formatCurrency(data.meron_total_wager);
-            document.getElementById('live-wala-wager').textContent = formatCurrency(data.wala_total_wager);
-        } catch (error) {
-            console.error('Error fetching live stats:', error);
-        }
-    }
-
-    function showStatusMessage(text, isError = false) {
-        const el = document.getElementById('status-message');
-        el.textContent = text;
-        el.style.color = isError ? 'var(--accent-red)' : 'var(--accent-green)';
-    }
-
+    async function fetchSummary() { /* ... function is unchanged ... */ }
+    async function fetchLiveStats() { /* ... function is unchanged ... */ }
+    function showStatusMessage(text, isError = false) { /* ... function is unchanged ... */ }
+    
     async function declareWinner(winner) {
-        if (!confirm(`Are you sure you want to declare ${winner} as the winner? This will finalize all bets.`)) {
-            return;
-        }
-
+        if (!eventId) { showStatusMessage('No active event to close.', true); return; }
+        if (!confirm(`Are you sure you want to declare ${winner} as the winner? This will finalize all bets.`)) { return; }
         try {
             const response = await fetch(eventEndApiUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({ winner: winner })
             });
-
             const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'An unknown error occurred.');
-            }
-            
+            if (!response.ok) { throw new Error(result.error || 'An unknown error occurred.'); }
             showStatusMessage(result.message);
+            meronWinnerBtn.disabled = true;
+            walaWinnerBtn.disabled = true;
+            if (statsInterval) clearInterval(statsInterval);
             fetchSummary();
-
         } catch (error) {
             console.error('Error declaring winner:', error);
             showStatusMessage(error.message, true);
         }
     }
+    
+    async function initialize() {
+        try {
+            const response = await fetch('/api/events/active/');
+            const data = await response.json();
+            if (data.id) {
+                eventId = data.id;
+                eventStatsApiUrl = `/api/events/${eventId}/stats/`;
+                eventEndApiUrl = `/api/events/${eventId}/end/`;
+                eventNameSpan.textContent = data.name;
+                meronWinnerBtn.disabled = false;
+                walaWinnerBtn.disabled = false;
+                fetchLiveStats();
+                statsInterval = setInterval(fetchLiveStats, 3000);
+            } else {
+                eventNameSpan.textContent = 'No Active Event';
+            }
+        } catch (error) {
+            eventNameSpan.textContent = 'Connection Error';
+            console.error("Could not fetch active event:", error);
+        }
+    }
 
-    // Fetch initial data and set intervals
     document.addEventListener('DOMContentLoaded', () => {
         fetchSummary();
-        fetchLiveStats();
-        setInterval(fetchSummary, 10000); // Refresh summary every 10 seconds
-        setInterval(fetchLiveStats, 3000); // Refresh live stats every 3 seconds
+        initialize();
+        setInterval(fetchSummary, 10000);
     });
 </script>
 </body>

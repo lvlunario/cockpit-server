@@ -6,4 +6,6 @@ urlpatterns = [
     path('events/<int:event_id>/stats/', EventStatsView.as_view(), name='event-stats'),
     path('reports/financial-summary/', FinancialSummaryView.as_view(), name='financial-summary'),
     path('events/<int:event_id>/end/', EndEventView.as_view(), name='end-event'),
+    path('events/<int:event_id>/set-active/', SetActiveEventView.as_view(), name='set-active-event'),
+    path('events/active/', ActiveEventView.as_view(), name='active-event'),
 ]

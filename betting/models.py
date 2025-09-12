@@ -10,7 +10,7 @@ class Cashier(models.Model):
     
 class Event(models.Model):
     name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False, unique=True, null=True)
     start_time = models.DateTimeField()
     
     WINNER_CHOICES = [
