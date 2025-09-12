@@ -71,3 +71,13 @@ class EndEventView(APIView):
             return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+def operator_dashboard_view(request):
+    """
+    Serves the main dashboard for the cockpit operator.
+    """
+    context = {
+        'event_id': 1 # Hardcoding the main event for now
+    }
+    return render(request, "operator.html", context)
