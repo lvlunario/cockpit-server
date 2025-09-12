@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from .models import Bet, Event
 from .serializers import BetSerializer
-from .logic import calculate_event_stats
+from .logic import calculate_event_stats, calculate_financial_summary
 
 class PlaceBetView(generics.CreateAPIView):
     queryset = Bet.objects.all()
@@ -22,6 +22,14 @@ class EventStatsView(APIView):
             return Response(stats)
         except Event.DoesNotExist:
             return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+class FinancialSummaryView(APIView):
+    """
+    Provides a high-level financial summary of all operations.
+    """
+    def get(self, request):
+        summary_data = calculate_financial_summary()
+        return Response(summary_data)
         
 def cashier_interface_view(request):
     # This view simply renders and returns the cashier.html template

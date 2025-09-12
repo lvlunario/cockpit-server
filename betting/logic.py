@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db.models import Sum
-from .models import Bet
+from .models import Bet, Event
 
 # The standard house cut is 10%
 HOUSE_CUT_PERCENTAGE = Decimal('0.10')
@@ -36,4 +36,28 @@ def calculate_event_stats(event):
         'wala_odds': round(wala_odds, 4),
         'meron_total_payout': meron_payout,
         'wala_total_payout': wala_payout,
+    }
+    
+    
+def calculate_financial_summary():
+    """
+    Calculates the financial summary across all completed events.
+    """
+    # Get all bets that are part of a completed event (i.e., has an outcome)
+    completed_bets = Bet.objects.filter(event__outcome__isnull=False)
+
+    total_wagers = completed_bets.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+    # Find all bets that have been marked as 'WON'
+    winning_bets = completed_bets.filter(payout_status='WON')
+    total_payouts = winning_bets.aggregate(total=Sum('payout_amount'))['total'] or Decimal('0.00')
+
+    # The house cut (rake) is the difference between wagers and payouts
+    total_rake = total_wagers - total_payouts
+
+    return {
+        'total_wagers': total_wagers,
+        'total_payouts': total_payouts,
+        'total_rake': total_rake,
+        'completed_matches': Event.objects.filter(is_closed=True).count()
     }
