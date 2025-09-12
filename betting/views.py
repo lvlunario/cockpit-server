@@ -35,7 +35,7 @@ def cashier_interface_view(request):
     # This view simply renders and returns the cashier.html template
     # We can pass initial data to the template here if needed in the future.
     context = {
-        'event_id': 1 # For now, we hardcode the main event ID
+        'event_id': 2 # For now, we hardcode the main event ID
     }
     return render(request, "cashier.html", context)
 
@@ -45,7 +45,7 @@ def totalizer_view(request):
     This view simply serves the totalizer.html template for public display
     """
     context = {
-        'event_id': 1 # Hardcoding the main event for now
+        'event_id': 2 # Hardcoding the main event for now
     }
     return render(request, "totalizer.html", context)
 
@@ -78,6 +78,6 @@ def operator_dashboard_view(request):
     Serves the main dashboard for the cockpit operator.
     """
     context = {
-        'event_id': 1 # Hardcoding the main event for now
+        'event_id': 2 # Hardcoding the main event for now
     }
     return render(request, "operator.html", context)

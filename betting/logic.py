@@ -41,18 +41,15 @@ def calculate_event_stats(event):
     
 def calculate_financial_summary():
     """
-    Calculates the financial summary across all completed events.
+    Calculates the financial summary across all operations.
     """
-    # Get all bets that are part of a completed event (i.e., has an outcome)
-    completed_bets = Bet.objects.filter(event__outcome__isnull=False)
+    # Get the sum of all bets from events that are closed for betting.
+    total_wagers = Bet.objects.filter(event__is_closed=True).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-    total_wagers = completed_bets.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    # Get the sum of all payouts that have been marked as WON.
+    total_payouts = Bet.objects.filter(payout_status='WON').aggregate(total=Sum('payout_amount'))['total'] or Decimal('0.00')
 
-    # Find all bets that have been marked as 'WON'
-    winning_bets = completed_bets.filter(payout_status='WON')
-    total_payouts = winning_bets.aggregate(total=Sum('payout_amount'))['total'] or Decimal('0.00')
-
-    # The house cut (rake) is the difference between wagers and payouts
+    # The house cut (rake) is the difference.
     total_rake = total_wagers - total_payouts
 
     return {

@@ -6,24 +6,80 @@
     <title>Operator Dashboard</title>
     <style>
         :root {
-            --bg-color: #10101d; --card-color: #16213e; --text-color: #e0fbfc;
-            --accent-green: #28a745; --accent-red: #dc3545; --accent-blue: #0f3460;
+            --bg-color: #10101d;
+            --card-color: #16213e;
+            --text-color: #e0fbfc;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+            --accent-blue: #0f3460;
         }
-        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
-        h1, h2 { color: white; }
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background-color: var(--card-color); border-radius: 10px; padding: 20px; }
-        .stat-card { text-align: center; }
-        .stat-card .label { font-size: 1.2em; color: #a9a9a9; }
-        .stat-card .value { font-size: 2.5em; font-weight: bold; margin-top: 10px; }
-        .financial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: white;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .stat-card {
+            text-align: center;
+        }
+        .stat-card .label {
+            font-size: 1.2em;
+            color: #a9a9a9;
+        }
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .financial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .live-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
         .event-controls button {
-            width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold;
-            color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
         }
-        .declare-meron { background-color: var(--accent-green); }
-        .declare-wala { background-color: var(--accent-red); }
-        .status-message { text-align: center; margin-top: 15px; font-size: 1.1em; height: 20px; }
+        .declare-meron {
+            background-color: var(--accent-green);
+        }
+        .declare-wala {
+            background-color: var(--accent-red);
+        }
+        .status-message {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.1em;
+            height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -32,7 +88,7 @@
 
     <div class="dashboard-grid">
         <div class="card">
-            <h2>Financial Summary</h2>
+            <h2>Financial Summary (All Fights)</h2>
             <div class="financial-grid">
                 <div class="stat-card">
                     <div class="label">Total Wagers</div>
@@ -50,7 +106,21 @@
         </div>
 
         <div class="card">
-            <h2>Live Event Control (Event #<span id="event-id"></span>)</h2>
+            <h2>Live Event Stats (Event #<span id="event-id-live"></span>)</h2>
+            <div class="live-stats-grid">
+                <div class="stat-card">
+                    <div class="label">Meron Wagers</div>
+                    <div class="value" id="live-meron-wager">₱0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Wala Wagers</div>
+                    <div class="value" id="live-wala-wager">₱0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Live Event Control (Event #<span id="event-id-control"></span>)</h2>
             <div class="event-controls">
                 <button class="declare-meron" onclick="declareWinner('MERON')">DECLARE MERON WINNER</button>
                 <button class="declare-wala" onclick="declareWinner('WALA')">DECLARE WALA WINNER</button>
@@ -62,8 +132,11 @@
 <script>
     const eventId = JSON.parse('{{ event_id|escapejs }}');
     const summaryApiUrl = '/api/reports/financial-summary/';
+    const eventStatsApiUrl = `/api/events/${eventId}/stats/`;
     const eventEndApiUrl = `/api/events/${eventId}/end/`;
-    document.getElementById('event-id').textContent = eventId;
+
+    document.getElementById('event-id-live').textContent = eventId;
+    document.getElementById('event-id-control').textContent = eventId;
 
     function formatCurrency(value) {
         const number = parseFloat(value);
@@ -79,6 +152,17 @@
             document.getElementById('summary-rake').textContent = formatCurrency(data.total_rake);
         } catch (error) {
             console.error('Error fetching summary:', error);
+        }
+    }
+
+    async function fetchLiveStats() {
+        try {
+            const response = await fetch(eventStatsApiUrl);
+            const data = await response.json();
+            document.getElementById('live-meron-wager').textContent = formatCurrency(data.meron_total_wager);
+            document.getElementById('live-wala-wager').textContent = formatCurrency(data.wala_total_wager);
+        } catch (error) {
+            console.error('Error fetching live stats:', error);
         }
     }
 
@@ -110,7 +194,6 @@
             }
             
             showStatusMessage(result.message);
-            // After declaring winner, refresh the financial summary to show new totals
             fetchSummary();
 
         } catch (error) {
@@ -119,10 +202,12 @@
         }
     }
 
-    // Fetch initial data on page load and then refresh every 10 seconds
+    // Fetch initial data and set intervals
     document.addEventListener('DOMContentLoaded', () => {
         fetchSummary();
+        fetchLiveStats();
         setInterval(fetchSummary, 10000); // Refresh summary every 10 seconds
+        setInterval(fetchLiveStats, 3000); // Refresh live stats every 3 seconds
     });
 </script>
 </body>
