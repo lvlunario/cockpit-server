@@ -61,3 +61,44 @@ def calculate_financial_summary():
         'total_rake': total_rake,
         'completed_matches': Event.objects.filter(is_closed=True).count()
     }
+
+def process_event_payouts(event, winner):
+    """
+    Finalizes an event, calculates payouts, and updates all bets.
+    This is the core function for closing a fight.
+    """
+    if event.is_closed:
+        # Prevent processing the same event twice
+        raise ValueError("This event has already been closed.")
+
+    # 1. Close the event and declare the winner
+    event.is_closed = True
+    event.is_active = False
+    event.outcome = winner
+    event.save()
+
+    # 2. Get the final financial stats and payout ratios
+    final_stats = calculate_event_stats(event)
+    meron_payout_ratio = final_stats.get('meron_odds', Decimal('0.00'))
+    wala_payout_ratio = final_stats.get('wala_odds', Decimal('0.00'))
+
+    # 3. Get all bets for this event
+    bets_to_update = Bet.objects.filter(event=event)
+
+    # 4. Loop through every bet and update its status and payout amount
+    for bet in bets_to_update:
+        is_winner = (bet.bet_choice.upper() == winner.upper())
+
+        if is_winner:
+            bet.payout_status = 'WON'
+            if winner.upper() == 'MERON':
+                bet.payout_amount = bet.amount * meron_payout_ratio
+            else: # Winner is WALA
+                bet.payout_amount = bet.amount * wala_payout_ratio
+        else:
+            bet.payout_status = 'LOST'
+            bet.payout_amount = Decimal('0.00')
+
+        bet.save()
+
+    return {"status": "success", "message": f"Event finalized. Winner: {winner}"}

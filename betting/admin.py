@@ -21,7 +21,7 @@ class BetAdmin(admin.ModelAdmin):
     
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'start_time', 'is_active')
+    list_display = ('name', 'start_time', 'is_active', 'is_closed', 'outcome')
     
 @admin.register(Cashier)
 class CashierAdmin(admin.ModelAdmin):
