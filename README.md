@@ -15,7 +15,7 @@ This is a Django-based betting application for managing cockpit arena events. It
 ![Cashier Interface](./screenshots/cashier-betting-view.png)
 
 ### Cashier Interface - payout
-![Cashier Interface](./screenshots/cashier-betting-view.png)
+![Cashier Interface](./screenshots/cashier-paytout-view.png)
 
 ### Operator Dashboard
 ![Operator Dashboard](./screenshots/operator-dashboard.png)
