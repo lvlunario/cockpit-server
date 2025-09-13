@@ -70,7 +70,7 @@ def process_event_payouts(event, winner):
 
     # 1. Close the event and declare the winner
     event.is_closed = True
-    event.is_active = False
+    event.is_active = None
     event.outcome = winner
     event.save()
 

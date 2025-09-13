@@ -1,4 +1,6 @@
-# betting/views.py
+# error logging, comment out
+# import logging
+
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -36,14 +38,18 @@ class EndEventView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            event = Event.objects.get(pk=event_id)
+            event = Event.objects.get(pk=event_id, is_active=True)
             result = process_event_payouts(event, winner.upper())
             return Response(result)
         except Event.DoesNotExist:
-            return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Active event not found"}, status=status.HTTP_404_NOT_FOUND)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        except Exception as e:
+            # add logging here to track unexpected errors
+            # logging.error(f"Unexpected error in EndEventView: {e}") 
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 class SetActiveEventView(APIView):
     def post(self, request, event_id):
         try:

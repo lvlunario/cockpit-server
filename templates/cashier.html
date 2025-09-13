@@ -137,19 +137,33 @@
         if (!eventId) { showMessage('Betting is closed. No active event.', true); return; }
         if (!selectedChoice) { showMessage('Please select Meron or Wala.', true); return; }
         if (parseInt(currentAmount) <= 0) { showMessage('Please enter an amount.', true); return; }
-        const betData = { event: eventId, cashier: 1, amount: currentAmount, bet_choice: selectedChoice };
+
+        const betData = { event: eventId, cashier: 100, amount: currentAmount, bet_choice: selectedChoice };
+
         try {
             const response = await fetch('/api/place-bet/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': '{{ csrf_token }}' 
+                },
                 body: JSON.stringify(betData)
             });
-            if (!response.ok) { throw new Error('Server returned an error.'); }
-            showMessage('Bet placed successfully!', false);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                const message = Object.values(errorData).flat().join(' ');
+                throw new Error(message || 'Server returned a validation error.');
+            }
+
+            const result = await response.json();
+            showMessage(`Bet #${result.id.substring(0, 4)} placed successfully!`, false);
             clearDisplay();
+            selectChoice('Meron'); // Reset selection
+            
         } catch (error) {
             console.error('Error placing bet:', error);
-            showMessage('Error: Could not place bet.', true);
+            showMessage(error.message, true);
         }
     }
     
