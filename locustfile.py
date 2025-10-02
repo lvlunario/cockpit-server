@@ -8,7 +8,7 @@ class BettingTasks:
     def __init__(self, user, active_event_id):
         self.user = user
         self.active_event_id = active_event_id
-        self.valid_cashier_ids = list(range(86, 110))
+        self.valid_cashier_ids = list(range(1, 25))
     
     def place_bet(self):
         # ... (this part of the code is unchanged) ...
