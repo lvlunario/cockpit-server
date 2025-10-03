@@ -4,193 +4,187 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operator Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #10101d; --card-color: #16213e; --text-color: #e0fbfc;
-            --accent-green: #28a745; --accent-red: #dc3545; --accent-blue: #0f3460;
-            --disabled-color: #5a5a5a;
+            --bg-dark: #1e293b; --bg-light: #334155; --text-light: #e2e8f0;
+            --text-dark: #94a3b8; --border-color: #475569; --meron-color: #10b981;
+            --wala-color: #ef4444; --accent-color: #3b82f6; --standby-color: #f59e0b;
         }
-        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
-        h1, h2 { color: white; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .card { background-color: var(--card-color); border-radius: 10px; padding: 20px; }
-        .stat-card { text-align: center; }
-        .stat-card .label { font-size: 1.2em; color: #a9a9a9; }
-        .stat-card .value { font-size: 2.5em; font-weight: bold; margin-top: 10px; }
-        .financial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
-        .live-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .event-controls button {
-            width: 100%; padding: 15px; font-size: 1.2em; font-weight: bold;
-            color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;
+        body {
+            font-family: 'Roboto', sans-serif; background-color: var(--bg-dark);
+            color: var(--text-light); margin: 0; padding: 1rem;
         }
-        .declare-meron { background-color: var(--accent-green); }
-        .declare-wala { background-color: var(--accent-red); }
-        .event-controls button:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
-        .status-message { text-align: center; margin-top: 15px; font-size: 1.1em; height: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .tabs { display: flex; border-bottom: 2px solid var(--border-color); }
+        .tab-button {
+            padding: 1rem 1.5rem; background: none; border: none; color: var(--text-dark);
+            font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent;
+        }
+        .tab-button.active { color: var(--text-light); border-bottom-color: var(--accent-color); }
+        .tab-content { display: none; padding: 2rem 0; }
+        .tab-content.active { display: block; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .panel { background-color: var(--bg-light); border-radius: 8px; padding: 1.5rem; }
+        .panel-title { font-size: 2rem; font-weight: 700; text-align: center; }
+        .panel.meron .panel-title { color: var(--meron-color); }
+        .panel.wala .panel-title { color: var(--wala-color); }
+        .stat-group { margin-top: 1.5rem; }
+        .stat { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); }
+        .stat .label { font-size: 1rem; color: var(--text-dark); }
+        .stat .value { font-size: 1.5rem; font-weight: 500; }
+        .controls { margin-top: 1.5rem; display: grid; gap: 0.8rem; }
+        .controls .status-display {
+            font-size: 1.2rem; text-align: center; font-weight: 700; padding: 1rem;
+            border-radius: 6px; text-transform: uppercase;
+        }
+        .btn {
+            width: 100%; padding: 0.8rem; font-size: 1rem; font-weight: 500;
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+        }
+        .btn-green { background-color: #16a34a; }
+        .btn-red { background-color: #dc2626; }
+        .btn-gray { background-color: #64748b; }
+        .btn-blue { background-color: #2563eb; }
+        .btn:disabled { background-color: #475569; cursor: not-allowed; }
     </style>
 </head>
 <body>
+    <div class="container">
+        {% csrf_token %}
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'dashboard')">Dashboard</button>
+            <button class="tab-button" onclick="openTab(event, 'wagers')">Entries</button>
+        </div>
 
-    <h1>Operator Dashboard</h1>
-
-    <div class="dashboard-grid">
-        <div class="card">
-            <h2>Financial Summary (All Fights)</h2>
-            <div class="financial-grid">
-                <div class="stat-card">
-                    <div class="label">Total Wagers</div>
-                    <div class="value" id="summary-wagers">₱0.00</div>
+        <div id="dashboard" class="tab-content active">
+            <h2 id="event-name">Loading Active Event...</h2>
+            <div class="dashboard-grid">
+                <!-- MERON PANEL -->
+                <div class="panel meron">
+                    <div class="panel-title">MERON</div>
+                    <div class="stat-group">
+                        <div class="stat"><span class="label">Total Points</span><span class="value" id="meron-points">₱0.00</span></div>
+                        <div class="stat"><span class="label">Payout Ratio</span><span class="value" id="meron-ratio">0.00</span></div>
+                    </div>
+                    <div class="controls">
+                        <div class="status-display" id="meron-status">STANDBY</div>
+                        <button class="btn btn-blue" id="open-entries-btn">Open Entries</button>
+                        <button class="btn btn-red" id="close-entries-btn">Close Entries</button>
+                        <button class="btn btn-green" id="meron-winner-btn">Declare Meron Winner</button>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="label">Total Payouts</div>
-                    <div class="value" id="summary-payouts">₱0.00</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Total Rake (Profit)</div>
-                    <div class="value" id="summary-rake">₱0.00</div>
+                <!-- WALA PANEL -->
+                <div class="panel wala">
+                    <div class="panel-title">WALA</div>
+                    <div class="stat-group">
+                        <div class="stat"><span class="label">Total Points</span><span class="value" id="wala-points">₱0.00</span></div>
+                        <div class="stat"><span class="label">Payout Ratio</span><span class="value" id="wala-ratio">0.00</span></div>
+                    </div>
+                     <div class="controls">
+                        <div class="status-display" id="wala-status">STANDBY</div>
+                        <button class="btn btn-red" id="wala-winner-btn">Declare Wala Winner</button>
+                        <button class="btn btn-gray" id="draw-winner-btn">Declare Draw</button>
+                        <div style="text-align:center; color: var(--text-dark); margin-top: 1rem;">Timer controls coming soon</div>
+                        <button class="btn btn-gray" disabled>Add 30 sec</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>Live Event Stats (<span id="event-name">No Active Event</span>)</h2>
-            <div class="live-stats-grid">
-                <div class="stat-card">
-                    <div class="label">Meron Wagers</div>
-                    <div class="value" id="live-meron-wager">₱0.00</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label">Wala Wagers</div>
-                    <div class="value" id="live-wala-wager">₱0.00</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Live Event Control</h2>
-            <div class="event-controls">
-                <button id="meron-winner-btn" class="declare-meron" onclick="declareWinner('MERON')" disabled>DECLARE MERON WINNER</button>
-                <button id="wala-winner-btn" class="declare-wala" onclick="declareWinner('WALA')" disabled>DECLARE WALA WINNER</button>
-            </div>
-            <div class="status-message" id="status-message"></div>
+        <div id="wagers" class="tab-content">
+            <h2>Entries & Financials</h2>
+            <p>This section will show detailed entry lists and financial reports.</p>
         </div>
     </div>
 
 <script>
-    // --- DOM Elements ---
-    const summaryWagersEl = document.getElementById('summary-wagers');
-    const summaryPayoutsEl = document.getElementById('summary-payouts');
-    const summaryRakeEl = document.getElementById('summary-rake');
-    const eventNameSpan = document.getElementById('event-name');
-    const liveMeronWagerEl = document.getElementById('live-meron-wager');
-    const liveWalaWagerEl = document.getElementById('live-wala-wager');
-    const meronWinnerBtn = document.getElementById('meron-winner-btn');
-    const walaWinnerBtn = document.getElementById('wala-winner-btn');
-    const statusMessageEl = document.getElementById('status-message');
-
-    // --- API URLs and State ---
-    const summaryApiUrl = '/api/reports/financial-summary/';
+    const API_BASE_URL = 'http://127.0.0.1:8000';
     let eventId = null;
-    let eventStatsApiUrl = '';
-    let eventEndApiUrl = '';
     let statsInterval = null;
 
-    // --- Helper Functions ---
+    const elements = {
+        eventName: document.getElementById('event-name'),
+        meronPoints: document.getElementById('meron-points'),
+        walaPoints: document.getElementById('wala-points'),
+        meronRatio: document.getElementById('meron-ratio'),
+        walaRatio: document.getElementById('wala-ratio'),
+        meronStatus: document.getElementById('meron-status'),
+        walaStatus: document.getElementById('wala-status'),
+        openEntriesBtn: document.getElementById('open-entries-btn'),
+        closeEntriesBtn: document.getElementById('close-entries-btn'),
+        meronWinnerBtn: document.getElementById('meron-winner-btn'),
+        walaWinnerBtn: document.getElementById('wala-winner-btn'),
+        drawWinnerBtn: document.getElementById('draw-winner-btn'),
+    };
+
     function formatCurrency(value) {
-        const number = parseFloat(value);
-        return '₱' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return '₱' + parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function showStatusMessage(text, isError = false) {
-        statusMessageEl.textContent = text;
-        statusMessageEl.style.color = isError ? 'var(--accent-red)' : 'var(--accent-green)';
+    function updateStatusDisplay(status) {
+        [elements.meronStatus, elements.walaStatus].forEach(el => {
+            el.textContent = status;
+            if (status === 'OPEN') el.style.backgroundColor = 'var(--meron-color)';
+            else if (status === 'CLOSED') el.style.backgroundColor = 'var(--wala-color)';
+            else el.style.backgroundColor = 'var(--standby-color)';
+        });
+        
+        const isEventOpen = status === 'OPEN';
+        const isEventClosed = status === 'CLOSED';
+        
+        elements.openEntriesBtn.disabled = isEventOpen;
+        elements.closeEntriesBtn.disabled = !isEventOpen;
+        elements.meronWinnerBtn.disabled = !isEventClosed;
+        elements.walaWinnerBtn.disabled = !isEventClosed;
+        elements.drawWinnerBtn.disabled = !isEventClosed;
     }
 
-    // --- API Call Functions ---
-    async function fetchSummary() {
+    async function changeEntryStatus(status) {
+        if (!eventId) return;
         try {
-            const response = await fetch(summaryApiUrl);
-            const data = await response.json();
-            summaryWagersEl.textContent = formatCurrency(data.total_wagers);
-            summaryPayoutsEl.textContent = formatCurrency(data.total_payouts);
-            summaryRakeEl.textContent = formatCurrency(data.total_rake);
-        } catch (error) { console.error('Error fetching summary:', error); }
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            await fetch(`${API_BASE_URL}/api/events/${eventId}/status/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ status: status })
+            });
+            fetchLiveStats();
+        } catch (error) {
+            console.error(`Error setting status to ${status}:`, error);
+        }
+    }
+    
+    async function declareWinner(winner) {
+         if (!eventId) return;
+         try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            await fetch(`${API_BASE_URL}/api/events/${eventId}/end/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ winner: winner })
+            });
+            initialize();
+         } catch(error) {
+             console.error('Error declaring winner:', error);
+         }
     }
 
     async function fetchLiveStats() {
         if (!eventId) return;
         try {
-            const response = await fetch(eventStatsApiUrl);
+            const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/stats/`);
             const data = await response.json();
-            // CORRECTION: Ensure these lines correctly update the elements
-            liveMeronWagerEl.textContent = formatCurrency(data.meron_total_wager);
-            liveWalaWagerEl.textContent = formatCurrency(data.wala_total_wager);
+            elements.meronPoints.textContent = formatCurrency(data.meron_total_points);
+            elements.walaPoints.textContent = formatCurrency(data.wala_total_points);
+            elements.meronRatio.textContent = data.meron_payout_ratio;
+            elements.walaRatio.textContent = data.wala_payout_ratio;
+            updateStatusDisplay(data.entry_status);
         } catch (error) { console.error('Error fetching live stats:', error); }
-    }
-
-    async function declareWinner(winner) {
-        if (!eventId) { showStatusMessage('No active event to close.', true); return; }
-        if (!confirm(`Are you sure you want to declare ${winner} as the winner? This will finalize all bets.`)) { return; }
-
-        meronWinnerBtn.disabled = true;
-        walaWinnerBtn.disabled = true;
-
-        try {
-            const response = await fetch(eventEndApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ winner: winner })
-            });
-            const result = await response.json();
-            if (!response.ok) { throw new Error(result.error || 'An unknown error occurred.'); }
-
-            showStatusMessage(result.message);
-
-            if (statsInterval) clearInterval(statsInterval);
-            eventNameSpan.textContent = 'No Active Event';
-            liveMeronWagerEl.textContent = '₱0.00';
-            liveWalaWagerEl.textContent = '₱0.00';
-            fetchSummary();
-
-        } catch (error) {
-            console.error('Error declaring winner:', error);
-            showStatusMessage(error.message, true);
-            meronWinnerBtn.disabled = false;
-            walaWinnerBtn.disabled = false;
-        }
     }
 
     async function initialize() {
         if (statsInterval) clearInterval(statsInterval);
         try {
-            const response = await fetch('/api/events/active/');
-            const data = await response.json();
-            if (data.id) {
-                eventId = data.id;
-                eventStatsApiUrl = `/api/events/${eventId}/stats/`;
-                eventEndApiUrl = `/api/events/${eventId}/end/`;
-                eventNameSpan.textContent = data.name;
-                meronWinnerBtn.disabled = false;
-                walaWinnerBtn.disabled = false;
-                fetchLiveStats();
-                statsInterval = setInterval(fetchLiveStats, 3000);
-            } else {
-                eventNameSpan.textContent = 'No Active Event';
-                meronWinnerBtn.disabled = true;
-                walaWinnerBtn.disabled = true;
-            }
-        } catch (error) {
-            eventNameSpan.textContent = 'Connection Error';
-            console.error("Could not fetch active event:", error);
-        }
-    }
+            const response
 
-    // --- Initial Page Load ---
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchSummary();
-        initialize();
-        setInterval(fetchSummary, 10000);
-    });
-</script>
-</body>
-</html>

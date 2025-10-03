@@ -3,105 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Totalizer - Cockpit Arena</title>
+    <title>Live Totals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #10101d; --card-color: #16213e; --text-color: #e0fbfc;
-            --accent-green: #28a745; --accent-red: #dc3545; --odds-color: #f7ff00;
+            --bg-color: #1a1a2e; --text-light: #e0fbfc; --text-dark: #333;
+            --meron-bg: #00b894; --wala-bg: #d63031; --draw-bg: #636e72;
+            --status-standby: #fdcb6e; --status-open: #00b894; --status-closed: #d63031;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;
+            font-family: 'Roboto', sans-serif; background-color: var(--bg-color);
+            color: var(--text-light); margin: 0; padding: 1.5rem;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
-        .event-title { font-size: 3em; margin-bottom: 20px; color: white; }
-        .totalizer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 95%; max-width: 1200px; }
-        .side-card { background-color: var(--card-color); border-radius: 15px; padding: 30px; text-align: center; border-top: 10px solid; }
-        .meron { border-color: var(--accent-green); }
-        .wala { border-color: var(--accent-red); }
-        .side-card h1 { font-size: 5em; margin: 0 0 10px 0; }
-        .meron h1 { color: var(--accent-green); }
-        .wala h1 { color: var(--accent-red); }
-        .label { font-size: 1.5em; color: #a9a9a9; text-transform: uppercase; }
-        .value { font-size: 3.5em; font-weight: bold; margin-top: 10px; }
-        .odds { color: var(--odds-color); font-size: 4.5em; }
+        .header { text-align: center; margin-bottom: 2rem; width: 100%; max-width: 1600px; }
+        h1 { font-size: 2rem; font-weight: 300; letter-spacing: 2px; color: #a9a9a9; margin: 0; }
+        #event-name { font-size: 2.5rem; font-weight: 700; color: white; min-height: 40px; }
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem; width: 100%; max-width: 1600px;
+        }
+        .panel { border-radius: 8px; padding: 1.5rem; text-align: center; color: white; }
+        .panel.meron { background-color: var(--meron-bg); }
+        .panel.wala { background-color: var(--wala-bg); }
+        .panel.draw { background-color: var(--draw-bg); }
+        .panel-title { font-size: 3rem; font-weight: 900; }
+        .info-grid {
+            display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem;
+        }
+        .info-box { background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px; }
+        .info-box .label { font-size: 1rem; font-weight: 400; opacity: 0.8; }
+        .info-box .value { font-size: 2.5rem; font-weight: 700; }
+        .status {
+            font-size: 1.8rem; font-weight: 700; padding: 1rem; border-radius: 6px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
-
-<h1 class="event-title" id="event-title">Loading Event...</h1>
-<div class="totalizer-grid">
-    <div class="side-card meron">
-        <h1>MERON</h1>
-        <p class="label">Total Wager</p>
-        <p class="value" id="meron-wager">₱0.00</p>
-        <p class="label">Odds</p>
-        <p class="value odds" id="meron-odds">0.00</p>
-        <p class="label">Total Payout</p>
-        <p class="value" id="meron-payout">₱0.00</p>
+    <div class="header">
+        <h1>10-STAG DERBI #6</h1>
+        <h2 id="event-name">Searching for Event...</h2>
     </div>
-    <div class="side-card wala">
-        <h1>WALA</h1>
-        <p class="label">Total Wager</p>
-        <p class="value" id="wala-wager">₱0.00</p>
-        <p class="label">Odds</p>
-        <p class="value odds" id="wala-odds">0.00</p>
-        <p class="label">Total Payout</p>
-        <p class="value" id="wala-payout">₱0.00</p>
+    <div class="grid-container">
+        <!-- MERON PANEL -->
+        <div class="panel meron">
+            <div class="panel-title">MERON</div>
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="label">TOTAL POINTS (<span id="meron-entry-count">0</span>)</div>
+                    <div class="value" id="meron-points">₱0.00</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">PAYOUT RATIO</div>
+                    <div class="value" id="meron-ratio">0.00</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">TOTAL PAYOUT</div>
+                    <div class="value" id="meron-payout">₱0.00</div>
+                </div>
+                <div class="status" id="meron-status">STANDBY</div>
+            </div>
+        </div>
+        <!-- WALA PANEL -->
+        <div class="panel wala">
+            <div class="panel-title">WALA</div>
+            <div class="info-grid">
+                 <div class="info-box">
+                    <div class="label">TOTAL POINTS (<span id="wala-entry-count">0</span>)</div>
+                    <div class="value" id="wala-points">₱0.00</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">PAYOUT RATIO</div>
+                    <div class="value" id="wala-ratio">0.00</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">TOTAL PAYOUT</div>
+                    <div class="value" id="wala-payout">₱0.00</div>
+                </div>
+                <div class="status" id="wala-status">STANDBY</div>
+            </div>
+        </div>
+        <!-- DRAW PANEL -->
+        <div class="panel draw">
+            <div class="panel-title">DRAW</div>
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="label">TOTAL POINTS (<span id="draw-entry-count">0</span>)</div>
+                    <div class="value" id="draw-points">₱0.00</div>
+                </div>
+                 <div class="info-box" style="visibility: hidden;"></div>
+                 <div class="info-box" style="visibility: hidden;"></div>
+                <div class="status" id="draw-status">STANDBY</div>
+            </div>
+        </div>
     </div>
-</div>
 
 <script>
-    const eventTitle = document.getElementById('event-title');
+    const API_BASE_URL = 'http://127.0.0.1:8000';
     let eventId = null;
     let statsInterval = null;
 
+    const elements = {
+        eventName: document.getElementById('event-name'),
+        meronPoints: document.getElementById('meron-points'),
+        walaPoints: document.getElementById('wala-points'),
+        drawPoints: document.getElementById('draw-points'),
+        meronCount: document.getElementById('meron-entry-count'),
+        walaCount: document.getElementById('wala-entry-count'),
+        drawCount: document.getElementById('draw-entry-count'),
+        meronRatio: document.getElementById('meron-ratio'),
+        walaRatio: document.getElementById('wala-ratio'),
+        meronPayout: document.getElementById('meron-payout'),
+        walaPayout: document.getElementById('wala-payout'),
+        meronStatus: document.getElementById('meron-status'),
+        walaStatus: document.getElementById('wala-status'),
+        drawStatus: document.getElementById('draw-status'),
+    };
+
     function formatCurrency(value) {
-        const number = parseFloat(value);
-        return '₱' + number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    
-    function updateDisplay(stats) {
-        document.getElementById('meron-wager').textContent = formatCurrency(stats.meron_total_wager);
-        document.getElementById('wala-wager').textContent = formatCurrency(stats.wala_total_wager);
-        document.getElementById('meron-odds').textContent = stats.meron_odds;
-        document.getElementById('wala-odds').textContent = stats.wala_odds;
-        document.getElementById('meron-payout').textContent = formatCurrency(stats.meron_total_payout);
-        document.getElementById('wala-payout').textContent = formatCurrency(stats.wala_total_payout);
+        return '₱' + parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    async function fetchStats() {
-        if (!eventId) return; // Don't fetch if we don't have an event ID
-        try {
-            const response = await fetch(`/api/events/${eventId}/stats/`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const stats = await response.json();
-            updateDisplay(stats);
-        } catch (error) {
-            console.error('Failed to fetch stats:', error);
-            // Stop polling if there's an error (e.g., event closed)
-            if(statsInterval) clearInterval(statsInterval);
-        }
+    function updateStatusDisplay(status) {
+        const statuses = [elements.meronStatus, elements.walaStatus, elements.drawStatus];
+        statuses.forEach(el => {
+            el.textContent = status;
+            if (status === 'OPEN') el.style.backgroundColor = 'var(--status-open)';
+            else if (status === 'CLOSED') el.style.backgroundColor = 'var(--status-closed)';
+            else el.style.backgroundColor = 'var(--status-standby)';
+        });
     }
-    
+
+    async function fetchLiveStats() {
+        if (!eventId) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/stats/`);
+            const data = await response.json();
+
+            elements.meronPoints.textContent = formatCurrency(data.meron_total_points);
+            elements.walaPoints.textContent = formatCurrency(data.wala_total_points);
+            elements.drawPoints.textContent = formatCurrency(data.draw_total_points);
+            elements.meronCount.textContent = data.meron_entry_count;
+            elements.walaCount.textContent = data.wala_entry_count;
+            elements.drawCount.textContent = data.draw_entry_count;
+            elements.meronRatio.textContent = data.meron_payout_ratio;
+            elements.walaRatio.textContent = data.wala_payout_ratio;
+            elements.meronPayout.textContent = formatCurrency(data.meron_total_payout);
+            elements.walaPayout.textContent = formatCurrency(data.wala_total_payout);
+            updateStatusDisplay(data.betting_status);
+
+            if (data.outcome) {
+                 elements.eventName.textContent = `WINNER: ${data.outcome}`;
+                 clearInterval(statsInterval);
+            }
+
+        } catch (error) { console.error('Error fetching live stats:', error); }
+    }
+
     async function initialize() {
         try {
-            const response = await fetch('/api/events/active/');
+            const response = await fetch(`${API_BASE_URL}/api/events/active/`);
+            if (!response.ok) throw new Error('No active event found');
             const data = await response.json();
-            if (data.id) {
+
+            if (data.id && data.id !== eventId) {
                 eventId = data.id;
-                eventTitle.textContent = data.name;
-                fetchStats(); // Initial fetch
-                statsInterval = setInterval(fetchStats, 3000); // Start polling
-            } else {
-                eventTitle.textContent = 'NO ACTIVE EVENT';
+                elements.eventName.textContent = data.name;
+                fetchLiveStats();
+                if (statsInterval) clearInterval(statsInterval);
+                statsInterval = setInterval(fetchLiveStats, 2000);
             }
         } catch (error) {
-            eventTitle.textContent = 'COULD NOT CONNECT TO SERVER';
-            console.error("Could not fetch active event:", error);
+            elements.eventName.textContent = 'Entries are Closed';
+            if (statsInterval) clearInterval(statsInterval);
+            // Optionally, fetch last closed event to show final results
         }
     }
-
-    document.addEventListener('DOMContentLoaded', initialize);
+    document.addEventListener('DOMContentLoaded', () => {
+        initialize();
+        setInterval(initialize, 10000); // Check for a new match every 10 seconds
+    });
 </script>
 </body>
 </html>
+

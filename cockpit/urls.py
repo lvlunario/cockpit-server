@@ -1,27 +1,21 @@
 """
 URL configuration for cockpit project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
 from django.urls import path, include
 from betting.views import cashier_interface_view, totalizer_view, operator_dashboard_view
 
 urlpatterns = [
+    # Path for the Django admin site
     path('admin/', admin.site.urls),
+
+    # This correctly sends all API requests to your betting app's urls.py
     path('api/', include('betting.urls')),
+
+    # These are the paths for your HTML pages
     path('cashier/', cashier_interface_view, name='cashier-interface'),
-    path('totalizer/', totalizer_view, name='totalizer-display'),
-    path('operator/', operator_dashboard_view, name='operator-dashboard'), 
+    path('totalizer/', totalizer_view, name='totalizer-view'),
+    path('operator/', operator_dashboard_view, name='operator-dashboard'),
+    path('', totalizer_view, name='home'), # Sets the totalizer as the homepage
 ]
+
