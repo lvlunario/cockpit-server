@@ -1,92 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Operator Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-dark: #1e293b; --bg-light: #334155; --text-light: #e2e8f0;
-            --text-dark: #94a3b8; --border-color: #475569; --meron-color: #10b981;
-            --wala-color: #ef4444; --accent-color: #3b82f6; --standby-color: #f59e0b;
+        :root{
+            --bg-dark:#0f172a; --bg-panel:#1f2937; --text:#e6eef8; --muted:#9aa8bf;
+            --meron:#10b981; --wala:#ef4444; --draw:#7c3aed; --accent:#3b82f6; --standby:#f59e0b;
+            --danger-flash: rgba(239,68,68,0.12);
         }
-        body {
-            font-family: 'Roboto', sans-serif; background-color: var(--bg-dark);
-            color: var(--text-light); margin: 0; padding: 1rem;
+        *{box-sizing:border-box}
+        body{
+            background:var(--bg-dark);
+            color:var(--text);
+            font-family:Roboto, sans-serif;
+            margin:0;padding:1rem;
         }
-        .container { max-width: 1600px; margin: 0 auto; }
-        .tabs { display: flex; border-bottom: 2px solid var(--border-color); }
-        .tab-button {
-            padding: 1rem 1.5rem; background: none; border: none; color: var(--text-dark);
-            font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent;
+        .container{max-width:1400px;margin:0 auto;}
+        .tabs{display:flex;border-bottom:2px solid rgba(255,255,255,0.04);gap:0.5rem}
+        .tab-button{
+            padding:0.8rem 1.2rem;border:0;background:none;color:var(--muted);cursor:pointer;
+            border-bottom:3px solid transparent;font-weight:600;border-radius:4px;
         }
-        .tab-button.active { color: var(--text-light); border-bottom-color: var(--accent-color); }
-        .tab-content { display: none; padding: 2rem 0; }
-        .tab-content.active { display: block; }
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .panel { background-color: var(--bg-light); border-radius: 8px; padding: 1.5rem; }
-        .panel-title { font-size: 2rem; font-weight: 700; text-align: center; }
-        .panel.meron .panel-title { color: var(--meron-color); }
-        .panel.wala .panel-title { color: var(--wala-color); }
-        .stat-group { margin-top: 1.5rem; }
-        .stat { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); }
-        .stat .label { font-size: 1rem; color: var(--text-dark); }
-        .stat .value { font-size: 1.5rem; font-weight: 500; }
-        .controls { margin-top: 1.5rem; display: grid; gap: 0.8rem; }
-        .controls .status-display {
-            font-size: 1.2rem; text-align: center; font-weight: 700; padding: 1rem;
-            border-radius: 6px; text-transform: uppercase;
+        .tab-button.active{color:var(--text);border-bottom-color:var(--accent); background:rgba(255,255,255,0.02)}
+        .tab-content{display:none;padding:1.2rem 0}
+        .tab-content.active{display:block}
+        .dashboard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+        .panel{background:var(--bg-panel);border-radius:10px;padding:1rem; box-shadow: 0 6px 18px rgba(2,6,23,0.6);}
+        .panel-title{text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:0.6rem}
+        .panel.meron .panel-title{color:var(--meron)}
+        .panel.wala .panel-title{color:var(--wala)}
+        .panel.draw .panel-title{color:var(--draw)}
+        .stat{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-top:1px solid rgba(255,255,255,0.02)}
+        .stat .label{color:var(--muted);font-size:0.95rem}
+        .stat .value{font-weight:700;font-size:1.2rem}
+        .controls{margin-top:0.9rem;display:grid;gap:0.6rem}
+        .status-display{padding:0.7rem;border-radius:6px;text-align:center;font-weight:800;text-transform:uppercase}
+        .btn{width:100%;padding:0.7rem;border-radius:6px;border:0;font-weight:700;cursor:pointer}
+        .btn:disabled{opacity:0.5;cursor:not-allowed}
+        .btn-blue{background:var(--accent);color:white}
+        .btn-green{background:var(--meron);color:white}
+        .btn-red{background:var(--wala);color:white}
+        .btn-gray{background:#475569;color:white}
+        .timer-card{display:flex;flex-direction:column;gap:0.6rem;align-items:center}
+        .timer-display{font-size:2.6rem;font-weight:900;letter-spacing:2px;padding:0.6rem 1rem;border-radius:8px;background:rgba(255,255,255,0.02)}
+        .timer-controls{display:flex;gap:0.6rem;width:100%}
+        .small-btn{flex:1;padding:0.5rem;border-radius:6px;border:0}
+        .flash{animation: flashBg 0.6s linear infinite}
+        @keyframes flashBg{0%{background:transparent}50%{background:var(--danger-flash)}100%{background:transparent}}
+        .top-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
+        .event-name{font-size:1.4rem;font-weight:800}
+        .meta{color:var(--muted);font-weight:600}
+        @media (max-width:980px){
+            .dashboard-grid{grid-template-columns:1fr; }
         }
-        .btn {
-            width: 100%; padding: 0.8rem; font-size: 1rem; font-weight: 500;
-            color: white; border: none; border-radius: 6px; cursor: pointer;
-        }
-        .btn-green { background-color: #16a34a; }
-        .btn-red { background-color: #dc2626; }
-        .btn-gray { background-color: #64748b; }
-        .btn-blue { background-color: #2563eb; }
-        .btn:disabled { background-color: #475569; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="container">
         {% csrf_token %}
         <div class="tabs">
-            <button class="tab-button active" onclick="openTab(event, 'dashboard')">Dashboard</button>
-            <button class="tab-button" onclick="openTab(event, 'wagers')">Entries</button>
+            <button class="tab-button active" onclick="openTab(event,'dashboard')">Dashboard</button>
+            <button class="tab-button" onclick="openTab(event,'wagers')">Entries</button>
         </div>
 
         <div id="dashboard" class="tab-content active">
-            <h2 id="event-name">Loading Active Event...</h2>
-            <div class="dashboard-grid">
-                <!-- MERON PANEL -->
-                <div class="panel meron">
-                    <div class="panel-title">MERON</div>
-                    <div class="stat-group">
-                        <div class="stat"><span class="label">Total Points</span><span class="value" id="meron-points">₱0.00</span></div>
-                        <div class="stat"><span class="label">Payout Ratio</span><span class="value" id="meron-ratio">0.00</span></div>
-                    </div>
-                    <div class="controls">
-                        <div class="status-display" id="meron-status">STANDBY</div>
-                        <button class="btn btn-blue" id="open-entries-btn">Open Entries</button>
-                        <button class="btn btn-red" id="close-entries-btn">Close Entries</button>
-                        <button class="btn btn-green" id="meron-winner-btn">Declare Meron Winner</button>
+            <div class="top-row">
+                <div>
+                    <div class="event-name" id="event-name">Loading Active Event...</div>
+                    <div class="meta" id="event-meta">—</div>
+                </div>
+                <div style="width:380px;">
+                    <!-- Timer Card -->
+                    <div class="panel timer-card" style="padding:12px;">
+                        <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <div style="font-weight:700">Match Timer</div>
+                            <div style="font-size:0.9rem;color:var(--muted);">Auto-close on finish</div>
+                        </div>
+                        <div id="timer-display" class="timer-display">00:00</div>
+                        <div style="width:100%;display:flex;gap:8px;">
+                            <button id="start-btn" class="small-btn btn-blue">Start</button>
+                            <button id="pause-btn" class="small-btn btn-gray">Pause</button>
+                            <button id="reset-btn" class="small-btn btn-gray">Reset</button>
+                        </div>
+                        <div style="width:100%;display:flex;gap:8px;margin-top:6px;">
+                            <button id="add-30-btn" class="small-btn btn-green">+30s</button>
+                            <button id="add-60-btn" class="small-btn btn-green">+60s</button>
+                        </div>
                     </div>
                 </div>
-                <!-- WALA PANEL -->
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- MERON -->
+                <div class="panel meron">
+                    <div class="panel-title">MERON</div>
+                    <div class="stat"><div class="label">Total Points</div><div class="value" id="meron-points">₱0.00</div></div>
+                    <div class="stat"><div class="label">Payout Ratio</div><div class="value" id="meron-ratio">0.00</div></div>
+                    <div class="controls">
+                        <div id="meron-status" class="status-display" style="background:var(--standby);color:#041124">STANDBY</div>
+                        <button id="open-entries-btn" class="btn btn-blue">Open Entries</button>
+                        <button id="close-entries-btn" class="btn btn-red">Close Entries</button>
+                        <button id="meron-winner-btn" class="btn btn-green">Declare Meron Winner</button>
+                    </div>
+                </div>
+
+                <!-- WALA -->
                 <div class="panel wala">
                     <div class="panel-title">WALA</div>
-                    <div class="stat-group">
-                        <div class="stat"><span class="label">Total Points</span><span class="value" id="wala-points">₱0.00</span></div>
-                        <div class="stat"><span class="label">Payout Ratio</span><span class="value" id="wala-ratio">0.00</span></div>
+                    <div class="stat"><div class="label">Total Points</div><div class="value" id="wala-points">₱0.00</div></div>
+                    <div class="stat"><div class="label">Payout Ratio</div><div class="value" id="wala-ratio">0.00</div></div>
+                    <div class="controls">
+                        <div id="wala-status" class="status-display" style="background:var(--standby);color:#041124">STANDBY</div>
+                        <button id="wala-winner-btn" class="btn btn-red">Declare Wala Winner</button>
                     </div>
-                     <div class="controls">
-                        <div class="status-display" id="wala-status">STANDBY</div>
-                        <button class="btn btn-red" id="wala-winner-btn">Declare Wala Winner</button>
-                        <button class="btn btn-gray" id="draw-winner-btn">Declare Draw</button>
-                        <div style="text-align:center; color: var(--text-dark); margin-top: 1rem;">Timer controls coming soon</div>
-                        <button class="btn btn-gray" disabled>Add 30 sec</button>
+                </div>
+
+                <!-- DRAW -->
+                <div class="panel draw">
+                    <div class="panel-title">DRAW</div>
+                    <div class="stat"><div class="label">Total Points</div><div class="value" id="draw-points">₱0.00</div></div>
+                    <div class="stat"><div class="label">Entry Count</div><div class="value" id="draw-count">0</div></div>
+                    <div class="controls">
+                        <div id="draw-status" class="status-display" style="background:var(--standby);color:#041124">STANDBY</div>
+                        <button id="draw-winner-btn" class="btn btn-gray">Declare Draw Winner</button>
                     </div>
                 </div>
             </div>
@@ -94,97 +133,334 @@
 
         <div id="wagers" class="tab-content">
             <h2>Entries & Financials</h2>
-            <p>This section will show detailed entry lists and financial reports.</p>
+            <p>This will show detailed entry lists and financial reports (not implemented in this template).</p>
         </div>
     </div>
 
 <script>
-    const API_BASE_URL = 'http://127.0.0.1:8000';
-    let eventId = null;
-    let statsInterval = null;
+/* ---------------------------
+   Configuration / State
+   --------------------------- */
+const API_BASE_URL = 'http://127.0.0.1:8000';
+let eventId = null;
+let statsInterval = null;
+let countdownInterval = null;
+let remainingSeconds = 0;
+let timerRunning = false;
+const LOW_TIME_THRESHOLD = 10; // seconds - warning flash
+const POLL_INTERVAL_MS = 2000;
 
-    const elements = {
-        eventName: document.getElementById('event-name'),
-        meronPoints: document.getElementById('meron-points'),
-        walaPoints: document.getElementById('wala-points'),
-        meronRatio: document.getElementById('meron-ratio'),
-        walaRatio: document.getElementById('wala-ratio'),
-        meronStatus: document.getElementById('meron-status'),
-        walaStatus: document.getElementById('wala-status'),
-        openEntriesBtn: document.getElementById('open-entries-btn'),
-        closeEntriesBtn: document.getElementById('close-entries-btn'),
-        meronWinnerBtn: document.getElementById('meron-winner-btn'),
-        walaWinnerBtn: document.getElementById('wala-winner-btn'),
-        drawWinnerBtn: document.getElementById('draw-winner-btn'),
-    };
+/* ---------------------------
+   Elements
+   --------------------------- */
+const el = {
+    eventName: document.getElementById('event-name'),
+    eventMeta: document.getElementById('event-meta'),
+    meronPoints: document.getElementById('meron-points'),
+    walaPoints: document.getElementById('wala-points'),
+    drawPoints: document.getElementById('draw-points'),
+    drawCount: document.getElementById('draw-count'),
+    meronRatio: document.getElementById('meron-ratio'),
+    walaRatio: document.getElementById('wala-ratio'),
+    meronStatus: document.getElementById('meron-status'),
+    walaStatus: document.getElementById('wala-status'),
+    drawStatus: document.getElementById('draw-status'),
+    openEntriesBtn: document.getElementById('open-entries-btn'),
+    closeEntriesBtn: document.getElementById('close-entries-btn'),
+    meronWinnerBtn: document.getElementById('meron-winner-btn'),
+    walaWinnerBtn: document.getElementById('wala-winner-btn'),
+    drawWinnerBtn: document.getElementById('draw-winner-btn'),
+    timerDisplay: document.getElementById('timer-display'),
+    startBtn: document.getElementById('start-btn'),
+    pauseBtn: document.getElementById('pause-btn'),
+    resetBtn: document.getElementById('reset-btn'),
+    add30Btn: document.getElementById('add-30-btn'),
+    add60Btn: document.getElementById('add-60-btn'),
+};
 
-    function formatCurrency(value) {
-        return '₱' + parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/* ---------------------------
+   Helpers
+   --------------------------- */
+function openTab(event, tabId){
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+function formatCurrency(v){
+    return '₱' + parseFloat(v || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function formatTime(seconds){
+    const mm = Math.floor(seconds/60).toString().padStart(2,'0');
+    const ss = Math.floor(seconds%60).toString().padStart(2,'0');
+    return `${mm}:${ss}`;
+}
+
+function flashElement(elm, shouldFlash){
+    if(shouldFlash) elm.classList.add('flash'); else elm.classList.remove('flash');
+}
+
+/* ---------------------------
+   Audio Alerts (WebAudio beep)
+   --------------------------- */
+let audioCtx = null;
+function beep(duration=200, freq=880, vol=0.2){
+    try{
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq;
+        g.gain.value = vol;
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        setTimeout(()=>{ o.stop(); }, duration);
+    }catch(e){
+        // fallback: console
+        console.warn('Audio unavailable', e);
     }
+}
 
-    function updateStatusDisplay(status) {
-        [elements.meronStatus, elements.walaStatus].forEach(el => {
-            el.textContent = status;
-            if (status === 'OPEN') el.style.backgroundColor = 'var(--meron-color)';
-            else if (status === 'CLOSED') el.style.backgroundColor = 'var(--wala-color)';
-            else el.style.backgroundColor = 'var(--standby-color)';
-        });
-        
-        const isEventOpen = status === 'OPEN';
-        const isEventClosed = status === 'CLOSED';
-        
-        elements.openEntriesBtn.disabled = isEventOpen;
-        elements.closeEntriesBtn.disabled = !isEventOpen;
-        elements.meronWinnerBtn.disabled = !isEventClosed;
-        elements.walaWinnerBtn.disabled = !isEventClosed;
-        elements.drawWinnerBtn.disabled = !isEventClosed;
+/* ---------------------------
+   Timer Controls
+   --------------------------- */
+function updateTimerDisplay(){
+    el.timerDisplay.textContent = formatTime(remainingSeconds);
+    // flash when low
+    const low = (remainingSeconds <= LOW_TIME_THRESHOLD && timerRunning);
+    el.timerDisplay.style.border = low ? '1px solid rgba(255,80,80,0.6)' : 'none';
+    flashElement(el.timerDisplay, low);
+}
+
+function startTimer(){
+    if(timerRunning) return;
+    if(remainingSeconds <= 0) {
+        // default start: 60s if not set
+        remainingSeconds = Math.max(remainingSeconds, 60);
     }
-
-    async function changeEntryStatus(status) {
-        if (!eventId) return;
-        try {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            await fetch(`${API_BASE_URL}/api/events/${eventId}/status/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ status: status })
-            });
-            fetchLiveStats();
-        } catch (error) {
-            console.error(`Error setting status to ${status}:`, error);
+    timerRunning = true;
+    updateTimerDisplay();
+    countdownInterval = setInterval(()=>{
+        if(remainingSeconds > 0){
+            remainingSeconds -= 1;
+            updateTimerDisplay();
+            // beep low-time warning once at threshold
+            if(remainingSeconds === LOW_TIME_THRESHOLD) beep(120, 880, 0.12);
+        } else {
+            // finish
+            stopTimer();
+            onTimerFinish();
         }
-    }
-    
-    async function declareWinner(winner) {
-         if (!eventId) return;
-         try {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            await fetch(`${API_BASE_URL}/api/events/${eventId}/end/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ winner: winner })
-            });
-            initialize();
-         } catch(error) {
-             console.error('Error declaring winner:', error);
-         }
-    }
+    }, 1000);
+}
 
-    async function fetchLiveStats() {
-        if (!eventId) return;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/stats/`);
-            const data = await response.json();
-            elements.meronPoints.textContent = formatCurrency(data.meron_total_points);
-            elements.walaPoints.textContent = formatCurrency(data.wala_total_points);
-            elements.meronRatio.textContent = data.meron_payout_ratio;
-            elements.walaRatio.textContent = data.wala_payout_ratio;
-            updateStatusDisplay(data.entry_status);
-        } catch (error) { console.error('Error fetching live stats:', error); }
+function stopTimer(){
+    timerRunning = false;
+    if(countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    updateTimerDisplay();
+}
+
+function resetTimer(seconds = 0){
+    stopTimer();
+    remainingSeconds = seconds;
+    updateTimerDisplay();
+}
+
+function addSeconds(sec){
+    remainingSeconds = Math.max(0, remainingSeconds + sec);
+    updateTimerDisplay();
+}
+
+/* ---------------------------
+   Auto-close behavior on timer finish
+   --------------------------- */
+async function onTimerFinish(){
+    // Visual + audible alert
+    el.timerDisplay.style.backgroundColor = 'rgba(255,255,255,0.03)';
+    // rapid beep pattern
+    beep(200, 880, 0.2);
+    setTimeout(()=>beep(180, 660, 0.2), 220);
+    // flash panels
+    document.querySelectorAll('.panel').forEach(p=>p.classList.add('flash'));
+    setTimeout(()=>document.querySelectorAll('.panel').forEach(p=>p.classList.remove('flash')), 3000);
+
+    // Auto-close: POST status CLOSED
+    if(!eventId) return;
+    try {
+        await changeEntryStatus('CLOSED');
+        // make sure stats refresh shows closed state
+        fetchLiveStats();
+    } catch(e){
+        console.error('Auto-close failed', e);
     }
+}
 
-    async function initialize() {
-        if (statsInterval) clearInterval(statsInterval);
-        try {
-            const response
+/* ---------------------------
+   API Actions
+   --------------------------- */
+async function changeEntryStatus(status){
+    if(!eventId) return;
+    try{
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch(`${API_BASE_URL}/api/events/${eventId}/status/`, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ status })
+        });
+        if(!resp.ok) throw new Error('Status change failed');
+        // refresh stats
+        await fetchLiveStats();
+    }catch(err){
+        console.error('Error changing entry status:', err);
+    }
+}
 
+async function declareWinner(winner){
+    if(!eventId) return;
+    try{
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch(`${API_BASE_URL}/api/events/${eventId}/end/`, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ winner })
+        });
+        if(!resp.ok) throw new Error('Declare winner failed');
+        // refresh everything and stop timer
+        stopTimer();
+        fetchActiveEvent(); // will update UI
+    }catch(err){
+        console.error('Error declaring winner:', err);
+    }
+}
+
+/* ---------------------------
+   Live Stats Polling
+   --------------------------- */
+async function fetchLiveStats(){
+    if(!eventId) return;
+    try{
+        const resp = await fetch(`${API_BASE_URL}/api/events/${eventId}/stats/`);
+        if(!resp.ok) throw new Error('stats fetch failed');
+        const data = await resp.json();
+        // map values
+        el.meronPoints.textContent = formatCurrency(data.meron_total_points);
+        el.walaPoints.textContent = formatCurrency(data.wala_total_points);
+        el.drawPoints.textContent = formatCurrency(data.draw_total_points);
+        el.drawCount.textContent = data.draw_entry_count || 0;
+        el.meronRatio.textContent = data.meron_payout_ratio;
+        el.walaRatio.textContent = data.wala_payout_ratio;
+        updateStatusDisplay(data.betting_status, data.outcome);
+    }catch(e){
+        console.error('fetchLiveStats error', e);
+    }
+}
+
+function updateStatusDisplay(status, outcome){
+    // normalize
+    const s = (status || 'STANDBY').toUpperCase();
+    const mapping = {
+        OPEN: {bg:'var(--meron)', text:'#041124'},
+        CLOSED: {bg:'var(--wala)', text:'#041124'},
+        STANDBY: {bg:'var(--standby)', text:'#041124'}
+    };
+    const style = mapping[s] || mapping.STANDBY;
+    [el.meronStatus, el.walaStatus, el.drawStatus].forEach(st => {
+        st.textContent = s;
+        st.style.backgroundColor = style.bg;
+        st.style.color = style.text;
+    });
+
+    // buttons enable/disable logic
+    const isOpen = s === 'OPEN';
+    const isClosed = s === 'CLOSED';
+    el.openEntriesBtn.disabled = isOpen;
+    el.closeEntriesBtn.disabled = !isOpen;
+    // winner declaration allowed only after closed
+    el.meronWinnerBtn.disabled = !isClosed;
+    el.walaWinnerBtn.disabled = !isClosed;
+    el.drawWinnerBtn.disabled = !isClosed;
+
+    // If outcome exists, show it in event name
+    if(outcome){
+        el.eventName.textContent = `WINNER: ${outcome}`;
+        // stop timer and polling
+        stopTimer();
+        if(statsInterval) { clearInterval(statsInterval); statsInterval = null; }
+    }
+}
+
+/* ---------------------------
+   Fetch active event
+   --------------------------- */
+async function fetchActiveEvent(){
+    try{
+        const resp = await fetch(`${API_BASE_URL}/api/events/active/`);
+        if(!resp.ok) throw new Error('No active event');
+        const data = await resp.json();
+        if(!data.id) throw new Error('Invalid active event payload');
+        // if changed event id, reset local timer UI state
+        if(eventId !== data.id){
+            resetTimer(0);
+            stopTimer();
+            remainingSeconds = 0;
+        }
+        eventId = data.id;
+        el.eventName.textContent = data.name;
+        el.eventMeta.textContent = `Event ID: ${eventId}`;
+        // start polling stats
+        fetchLiveStats();
+        if(statsInterval) clearInterval(statsInterval);
+        statsInterval = setInterval(fetchLiveStats, POLL_INTERVAL_MS);
+    }catch(e){
+        // no active event
+        eventId = null;
+        el.eventName.textContent = 'No Active Event';
+        el.eventMeta.textContent = '';
+        if(statsInterval){ clearInterval(statsInterval); statsInterval = null; }
+    }
+}
+
+/* ---------------------------
+   Wiring up UI handlers
+   --------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+    // fetch current active event
+    fetchActiveEvent();
+    setInterval(fetchActiveEvent, 10000); // check every 10s for changes
+
+    // Timer buttons
+    el.startBtn.addEventListener('click', () => {
+        // when starting for the first time and 0s set default 60s
+        if(remainingSeconds === 0) remainingSeconds = 60;
+        startTimer();
+    });
+    el.pauseBtn.addEventListener('click', stopTimer);
+    el.resetBtn.addEventListener('click', () => resetTimer(0));
+    el.add30Btn.addEventListener('click', () => addSeconds(30));
+    el.add60Btn.addEventListener('click', () => addSeconds(60));
+
+    // Entry status buttons
+    el.openEntriesBtn.addEventListener('click', () => {
+        // open entries and also reset/start timer to default 60s if not running
+        changeEntryStatus('OPEN').then(()=> {
+            if(remainingSeconds === 0) remainingSeconds = 60;
+            startTimer();
+        });
+    });
+    el.closeEntriesBtn.addEventListener('click', () => {
+        // pause timer and close
+        stopTimer();
+        changeEntryStatus('CLOSED');
+    });
+
+    // Winner buttons
+    el.meronWinnerBtn.addEventListener('click', () => declareWinner('MERON'));
+    el.walaWinnerBtn.addEventListener('click', () => declareWinner('WALA'));
+    el.drawWinnerBtn.addEventListener('click', () => declareWinner('DRAW'));
+});
+</script>
+</body>
+</html>
